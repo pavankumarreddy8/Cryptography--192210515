@@ -1,0 +1,115 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <math.h>
+
+// Function to encrypt a message using Hill cipher
+void hillEncrypt(const char *message, const int keyMatrix[][3], char *cipher) {
+    int len = strlen(message);
+
+    // Padding the message with 'X' if its length is not a multiple of 3
+    int paddedLen = (len % 3 == 0) ? len : len + (3 - len % 3);
+    char paddedMessage[paddedLen + 1];
+    strcpy(paddedMessage, message);
+    for (int i = len; i < paddedLen; i++) {
+        paddedMessage[i] = 'X';
+    }
+    paddedMessage[paddedLen] = '\0';
+
+    // Encrypt the message in blocks of 3
+    for (int i = 0; i < paddedLen; i += 3) {
+        for (int j = 0; j < 3; j++) {
+            cipher[i + j] = (char)(((keyMatrix[j][0] * (paddedMessage[i] - 'A') +
+                                     keyMatrix[j][1] * (paddedMessage[i + 1] - 'A') +
+                                     keyMatrix[j][2] * (paddedMessage[i + 2] - 'A')) % 26) + 'A');
+        }
+    }
+    cipher[paddedLen] = '\0';
+}
+
+// Function to find the modular multiplicative inverse of a number
+int modInverse(int a, int m) {
+    a = a % m;
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1) {
+            return x;
+        }
+    }
+    return -1; // Inverse does not exist
+}
+
+// Function to decrypt a message using Hill cipher
+void hillDecrypt(const char *cipher, const int keyMatrix[][3], char *message) {
+    int len = strlen(cipher);
+    int adjMatrix[3][3];
+    int determinant = keyMatrix[0][0] * (keyMatrix[1][1] * keyMatrix[2][2] - keyMatrix[2][1] * keyMatrix[1][2]) -
+                      keyMatrix[0][1] * (keyMatrix[1][0] * keyMatrix[2][2] - keyMatrix[1][2] * keyMatrix[2][0]) +
+                      keyMatrix[0][2] * (keyMatrix[1][0] * keyMatrix[2][1] - keyMatrix[1][1] * keyMatrix[2][0]);
+
+    // Calculate the determinant modulo 26
+    determinant = (determinant % 26 + 26) % 26;
+
+    // Find the modular multiplicative inverse of the determinant
+    int detInverse = modInverse(determinant, 26);
+
+    if (detInverse == -1) {
+        printf("Inverse does not exist. Hill cipher key is not valid.\n");
+        return;
+    }
+
+    // Calculate the adjugate matrix
+    adjMatrix[0][0] = (keyMatrix[1][1] * keyMatrix[2][2] - keyMatrix[2][1] * keyMatrix[1][2]) % 26;
+    adjMatrix[0][1] = (-1 * keyMatrix[1][0] * keyMatrix[2][2] + keyMatrix[1][2] * keyMatrix[2][0]) % 26;
+    adjMatrix[0][2] = (keyMatrix[1][0] * keyMatrix[2][1] - keyMatrix[1][1] * keyMatrix[2][0]) % 26;
+    adjMatrix[1][0] = (-1 * keyMatrix[0][1] * keyMatrix[2][2] + keyMatrix[0][2] * keyMatrix[2][1]) % 26;
+    adjMatrix[1][1] = (keyMatrix[0][0] * keyMatrix[2][2] - keyMatrix[0][2] * keyMatrix[2][0]) % 26;
+    adjMatrix[1][2] = (-1 * keyMatrix[0][0] * keyMatrix[2][1] + keyMatrix[0][1] * keyMatrix[2][0]) % 26;
+    adjMatrix[2][0] = (keyMatrix[0][1] * keyMatrix[1][2] - keyMatrix[0][2] * keyMatrix[1][1]) % 26;
+    adjMatrix[2][1] = (-1 * keyMatrix[0][0] * keyMatrix[1][2] + keyMatrix[0][2] * keyMatrix[1][0]) % 26;
+    adjMatrix[2][2] = (keyMatrix[0][0] * keyMatrix[1][1] - keyMatrix[0][1] * keyMatrix[1][0]) % 26;
+
+    // Calculate the inverse matrix
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            adjMatrix[i][j] = (adjMatrix[i][j] * detInverse) % 26;
+            if (adjMatrix[i][j] < 0) {
+                adjMatrix[i][j] += 26;
+            }
+        }
+    }
+
+    // Decrypt the message in blocks of 3
+    for (int i = 0; i < len; i += 3) {
+        for (int j = 0; j < 3; j++) {
+            message[i + j] = (char)(((adjMatrix[j][0] * (cipher[i] - 'A') +
+                                       adjMatrix[j][1] * (cipher[i + 1] - 'A') +
+                                       adjMatrix[j][2] * (cipher[i + 2] - 'A')) % 26) + 'A');
+        }
+    }
+    message[len] = '\0';
+}
+
+int main() {
+    // Example Key Matrix (3x3)
+    int keyMatrix[3][3] = {
+        {6, 24, 1},
+        {13, 16, 10},
+        {20, 17, 15}
+    };
+
+    // Example Message
+    const char *message = "HELLO";
+
+    // Encrypt the message
+    char cipher[strlen(message) + 1];
+    hillEncrypt(message, keyMatrix, cipher);
+    printf("Encrypted Message: %s\n", cipher);
+
+    // Decrypt the message
+    char decryptedMessage[strlen(message) + 1];
+    hillDecrypt(cipher, keyMatrix, decryptedMessage);
+    printf("Decrypted Message: %s\n", decryptedMessage);
+
+    return 0;
+}

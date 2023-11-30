@@ -1,0 +1,72 @@
+#include <stdio.h>
+#include <ctype.h>
+
+// Function to calculate the modular multiplicative inverse
+int modInverse(int a, int m) {
+    a = a % m;
+    for (int x = 1; x < m; x++)
+        if ((a * x) % m == 1)
+            return x;
+    return -1; // Inverse does not exist
+}
+
+// Function to encrypt a character using the affine Caesar cipher
+char encrypt(char plaintext, int a, int b) {
+    if (isalpha(plaintext)) {
+        char base = isupper(plaintext) ? 'A' : 'a';
+        return (char)((a * (plaintext - base) + b) % 26 + base);
+    }
+    return plaintext;
+}
+
+// Function to decrypt a character using the affine Caesar cipher
+char decrypt(char ciphertext, int a, int b) {
+    if (isalpha(ciphertext)) {
+        char base = isupper(ciphertext) ? 'A' : 'a';
+        int aInverse = modInverse(a, 26);
+        if (aInverse == -1) {
+            printf("Error: Inverse does not exist.\n");
+            return ciphertext;
+        }
+        return (char)(aInverse * (ciphertext - base - b + 26) % 26 + base);
+    }
+    return ciphertext;
+}
+
+// Function to encrypt a string using the affine Caesar cipher
+void encryptString(char *plaintext, int a, int b, char *ciphertext) {
+    for (int i = 0; plaintext[i] != '\0'; ++i) {
+        ciphertext[i] = encrypt(plaintext[i], a, b);
+    }
+    ciphertext[i] = '\0';
+}
+
+// Function to decrypt a string using the affine Caesar cipher
+void decryptString(char *ciphertext, int a, int b, char *decrypted) {
+    for (int i = 0; ciphertext[i] != '\0'; ++i) {
+        decrypted[i] = decrypt(ciphertext[i], a, b);
+    }
+    decrypted[i] = '\0';
+}
+
+int main() {
+    char plaintext[] = "HelloWorld";
+    int a = 3; // Choose a carefully to ensure a one-to-one mapping
+    int b = 5; // Shift parameter
+
+    char ciphertext[sizeof(plaintext)];
+    char decrypted[sizeof(plaintext)];
+
+    // Encrypt the plaintext
+    encryptString(plaintext, a, b, ciphertext);
+
+    // Decrypt the ciphertext
+    decryptString(ciphertext, a, b, decrypted);
+
+    // Display results
+    printf("Plaintext: %s\n", plaintext);
+    printf("Ciphertext: %s\n", ciphertext);
+    printf("Decrypted: %s\n", decrypted);
+
+    return 0;
+}

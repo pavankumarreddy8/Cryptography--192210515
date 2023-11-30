@@ -1,0 +1,45 @@
+#include <stdio.h>
+#include <sodium.h>
+
+void generate_dsa_keypair(unsigned char *public_key, unsigned char *secret_key) {
+    crypto_sign_keypair(public_key, secret_key);
+}
+
+void dsa_sign(const char *message, const unsigned char *secret_key, unsigned char *signature) {
+    crypto_sign_detached(signature, NULL, message, strlen(message), secret_key);
+}
+
+int dsa_verify(const char *message, const unsigned char *public_key, const unsigned char *signature) {
+    return crypto_sign_verify_detached(signature, message, strlen(message), public_key);
+}
+
+int main() {
+    if (sodium_init() < 0) {
+        printf("Error initializing sodium.\n");
+        return 1;
+    }
+
+    unsigned char public_key[crypto_sign_PUBLICKEYBYTES];
+    unsigned char secret_key[crypto_sign_SECRETKEYBYTES];
+    unsigned char signature[crypto_sign_BYTES];
+
+    // Generate DSA key pair
+    generate_dsa_keypair(public_key, secret_key);
+
+    // Message to be signed
+    const char *message = "Hello, DSA!";
+
+    // Sign the message
+    dsa_sign(message, secret_key, signature);
+
+    // Verify the signature
+    int verification_result = dsa_verify(message, public_key, signature);
+
+    if (verification_result == 0) {
+        printf("Signature verification successful.\n");
+    } else {
+        printf("Signature verification failed.\n");
+    }
+
+    return 0;
+}

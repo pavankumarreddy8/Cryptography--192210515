@@ -1,0 +1,69 @@
+#include <stdio.h>
+
+// Function to perform left shift on a block
+void leftShift(unsigned char *block, int block_size) {
+    int i;
+    unsigned char overflow = 0;
+
+    for (i = 0; i < block_size; ++i) {
+        // Perform left shift
+        unsigned char shifted_bit = (block[i] << 1) | overflow;
+        
+        // Check if there's a carry (overflow)
+        overflow = (block[i] & 0x80) ? 1 : 0;
+
+        // Update the block with the shifted value
+        block[i] = shifted_bit;
+    }
+
+    // If the last bit has a carry, XOR with a constant
+    if (overflow) {
+        block[block_size - 1] ^= 0x87; // Constant for 128-bit block size
+    }
+}
+
+// Function to print a block
+void printBlock(const unsigned char *block, int block_size) {
+    for (int i = 0; i < block_size; ++i) {
+        printf("%02x ", block[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    // Constants for block sizes of 64 and 128 bits
+    unsigned char constant_64[8] = {0x1b, 0x36, 0x6d, 0xb3, 0x6d, 0xb3, 0x6d, 0xb3};
+    unsigned char constant_128[16] = {0x87, 0x1f, 0x2e, 0x33, 0x44, 0x55, 0x66, 0x77, 0x87, 0x1f, 0x2e, 0x33, 0x44, 0x55, 0x66, 0x77};
+
+    // Subkey generation for 64-bit block size
+    unsigned char subkey_64[8] = {0};
+    printf("Subkey Generation for 64-bit Block Size:\n");
+    printBlock(subkey_64, 8);
+
+    leftShift(subkey_64, 8);
+    printf("After Left Shift:\n");
+    printBlock(subkey_64, 8);
+
+    for (int i = 0; i < 8; ++i) {
+        subkey_64[i] ^= constant_64[i];
+    }
+    printf("After XOR with Constant:\n");
+    printBlock(subkey_64, 8);
+
+    // Subkey generation for 128-bit block size
+    unsigned char subkey_128[16] = {0};
+    printf("\nSubkey Generation for 128-bit Block Size:\n");
+    printBlock(subkey_128, 16);
+
+    leftShift(subkey_128, 16);
+    printf("After Left Shift:\n");
+    printBlock(subkey_128, 16);
+
+    for (int i = 0; i < 16; ++i) {
+        subkey_128[i] ^= constant_128[i];
+    }
+    printf("After XOR with Constant:\n");
+    printBlock(subkey_128, 16);
+
+    return 0;
+}

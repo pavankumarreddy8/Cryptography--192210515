@@ -1,0 +1,135 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <openssl/des.h>
+
+#define BLOCK_SIZE 8 // DES block size in bytes
+
+// Function to perform DES encryption using ECB mode
+void des_ecb_encrypt(const char *input, const char *key, char *output) {
+    DES_cblock desKey;
+    DES_key_schedule keySchedule;
+
+    // Set the encryption key
+    DES_set_key((DES_cblock *)key, &keySchedule);
+
+    // Encrypt the input data block by block using ECB mode
+    for (size_t i = 0; i < strlen(input); i += BLOCK_SIZE) {
+        DES_ecb_encrypt((DES_cblock *)(input + i), (DES_cblock *)(output + i), &keySchedule, DES_ENCRYPT);
+    }
+}
+
+// Function to perform DES decryption using ECB mode
+void des_ecb_decrypt(const char *input, const char *key, char *output) {
+    DES_cblock desKey;
+    DES_key_schedule keySchedule;
+
+    // Set the decryption key
+    DES_set_key((DES_cblock *)key, &keySchedule);
+
+    // Decrypt the input data block by block using ECB mode
+    for (size_t i = 0; i < strlen(input); i += BLOCK_SIZE) {
+        DES_ecb_encrypt((DES_cblock *)(input + i), (DES_cblock *)(output + i), &keySchedule, DES_DECRYPT);
+    }
+}
+
+// Function to perform DES encryption using CBC mode
+void des_cbc_encrypt(const char *input, const char *key, const char *iv, char *output) {
+    DES_cblock desKey, desIv;
+    DES_key_schedule keySchedule;
+
+    // Set the encryption key
+    DES_set_key((DES_cblock *)key, &keySchedule);
+    DES_cblock_copy(&desIv, (DES_cblock *)iv); // Copy the IV
+
+    // Encrypt the input data block by block using CBC mode
+    for (size_t i = 0; i < strlen(input); i += BLOCK_SIZE) {
+        DES_ncbc_encrypt((DES_cblock *)(input + i), (DES_cblock *)(output + i), BLOCK_SIZE, &keySchedule, &desIv, DES_ENCRYPT);
+    }
+}
+
+// Function to perform DES decryption using CBC mode
+void des_cbc_decrypt(const char *input, const char *key, const char *iv, char *output) {
+    DES_cblock desKey, desIv;
+    DES_key_schedule keySchedule;
+
+    // Set the decryption key
+    DES_set_key((DES_cblock *)key, &keySchedule);
+    DES_cblock_copy(&desIv, (DES_cblock *)iv); // Copy the IV
+
+    // Decrypt the input data block by block using CBC mode
+    for (size_t i = 0; i < strlen(input); i += BLOCK_SIZE) {
+        DES_ncbc_encrypt((DES_cblock *)(input + i), (DES_cblock *)(output + i), BLOCK_SIZE, &keySchedule, &desIv, DES_DECRYPT);
+    }
+}
+
+// Function to perform DES encryption using CFB mode
+void des_cfb_encrypt(const char *input, const char *key, const char *iv, char *output) {
+    DES_cblock desKey, desIv;
+    DES_key_schedule keySchedule;
+
+    // Set the encryption key
+    DES_set_key((DES_cblock *)key, &keySchedule);
+    DES_cblock_copy(&desIv, (DES_cblock *)iv); // Copy the IV
+
+    // Encrypt the input data block by block using CFB mode
+    for (size_t i = 0; i < strlen(input); i += BLOCK_SIZE) {
+        DES_cfb_encrypt((DES_cblock *)(input + i), (DES_cblock *)(output + i), BLOCK_SIZE, &keySchedule, &desIv, DES_ENCRYPT);
+    }
+}
+
+// Function to perform DES decryption using CFB mode
+void des_cfb_decrypt(const char *input, const char *key, const char *iv, char *output) {
+    DES_cblock desKey, desIv;
+    DES_key_schedule keySchedule;
+
+    // Set the decryption key
+    DES_set_key((DES_cblock *)key, &keySchedule);
+    DES_cblock_copy(&desIv, (DES_cblock *)iv); // Copy the IV
+
+    // Decrypt the input data block by block using CFB mode
+    for (size_t i = 0; i < strlen(input); i += BLOCK_SIZE) {
+        DES_cfb_encrypt((DES_cblock *)(input + i), (DES_cblock *)(output + i), BLOCK_SIZE, &keySchedule, &desIv, DES_DECRYPT);
+    }
+}
+
+int main() {
+    const char *plaintext = "abcdefgh";
+    const char *key = "12345678";
+    const char *iv = "87654321"; // Initialization Vector for CBC and CFB modes
+
+    char encrypted_ecb[strlen(plaintext) + 1];
+    char decrypted_ecb[strlen(plaintext) + 1];
+
+    char encrypted_cbc[strlen(plaintext) + 1];
+    char decrypted_cbc[strlen(plaintext) + 1];
+
+    char encrypted_cfb[strlen(plaintext) + 1];
+    char decrypted_cfb[strlen(plaintext) + 1];
+
+    // ECB mode
+    des_ecb_encrypt(plaintext, key, encrypted_ecb);
+    des_ecb_decrypt(encrypted_ecb, key, decrypted_ecb);
+
+    // CBC mode
+    des_cbc_encrypt(plaintext, key, iv, encrypted_cbc);
+    des_cbc_decrypt(encrypted_cbc, key, iv, decrypted_cbc);
+
+    // CFB mode
+    des_cfb_encrypt(plaintext, key, iv, encrypted_cfb);
+    des_cfb_decrypt(encrypted_cfb, key, iv, decrypted_cfb);
+
+    // Display results
+    printf("Plaintext: %s\n", plaintext);
+
+    printf("ECB Encrypted: %s\n", encrypted_ecb);
+    printf("ECB Decrypted: %s\n", decrypted_ecb);
+
+    printf("CBC Encrypted: %s\n", encrypted_cbc);
+    printf("CBC Decrypted: %s\n", decrypted_cbc);
+
+    printf("CFB Encrypted: %s\n", encrypted_cfb);
+    printf("CFB Decrypted: %s\n", decrypted_cfb);
+
+    return 0;
+}

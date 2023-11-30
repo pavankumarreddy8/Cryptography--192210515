@@ -1,0 +1,96 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define ALPHABET_SIZE 26
+
+// Function to calculate letter frequency in a given text
+void calculateLetterFrequency(const char *text, int *frequency) {
+    for (size_t i = 0; i < strlen(text); i++) {
+        if (isalpha(text[i])) {
+            frequency[tolower(text[i]) - 'a']++;
+        }
+    }
+}
+
+// Function to perform additive cipher decryption
+void additiveDecrypt(const char *ciphertext, int shift, char *plaintext) {
+    for (size_t i = 0; i < strlen(ciphertext); i++) {
+        if (isalpha(ciphertext[i])) {
+            char base = isupper(ciphertext[i]) ? 'A' : 'a';
+            plaintext[i] = (char)(((ciphertext[i] - base - shift + 26) % 26) + base);
+        } else {
+            plaintext[i] = ciphertext[i];
+        }
+    }
+    plaintext[strlen(ciphertext)] = '\0';
+}
+
+// Function to score the similarity of two frequency arrays
+int scoreFrequencyMatch(int *freq1, int *freq2) {
+    int score = 0;
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        score += abs(freq1[i] - freq2[i]);
+    }
+    return score;
+}
+
+// Function to find the most likely shift based on letter frequency analysis
+void findLikelyShift(const char *ciphertext, int *likelyShifts, int topN) {
+    int ciphertextFrequency[ALPHABET_SIZE] = {0};
+    calculateLetterFrequency(ciphertext, ciphertextFrequency);
+
+    // English letter frequency (you can replace this with a more accurate model)
+    int englishFrequency[ALPHABET_SIZE] = {
+        8, 2, 3, 4, 13, 2, 2, 6, 7, 0, 1, 4, 2, 7, 8, 2, 0, 6, 6, 9, 3, 1, 0, 2, 0, 1
+    };
+
+    // Try all possible shifts
+    for (int shift = 0; shift < ALPHABET_SIZE; shift++) {
+        char decryptedText[strlen(ciphertext) + 1];
+        additiveDecrypt(ciphertext, shift, decryptedText);
+
+        int score = scoreFrequencyMatch(ciphertextFrequency, englishFrequency);
+        
+        // Store the shift and score in the likelyShifts array
+        likelyShifts[shift] = score;
+    }
+
+    // Sort likelyShifts based on the scores (ascending order)
+    for (int i = 0; i < ALPHABET_SIZE - 1; i++) {
+        for (int j = i + 1; j < ALPHABET_SIZE; j++) {
+            if (likelyShifts[i] > likelyShifts[j]) {
+                // Swap shifts
+                int temp = likelyShifts[i];
+                likelyShifts[i] = likelyShifts[j];
+                likelyShifts[j] = temp;
+            }
+        }
+    }
+}
+
+int main() {
+    // Example Ciphertext
+    const char *ciphertext = "VSDFH";
+
+    // Number of top possible plaintexts to display
+    int topN = 10;
+
+    // Array to store likely shifts and scores
+    int likelyShifts[ALPHABET_SIZE];
+
+    // Find the most likely shifts
+    findLikelyShift(ciphertext, likelyShifts, ALPHABET_SIZE);
+
+    // Display the top N possible plaintexts
+    printf("Top %d Possible Plaintexts:\n", topN);
+    for (int i = 0; i < topN; i++) {
+        int shift = likelyShifts[i];
+        char plaintext[strlen(ciphertext) + 1];
+        additiveDecrypt(ciphertext, shift, plaintext);
+        printf("Shift %d: %s\n", shift, plaintext);
+    }
+
+    return 0;
+}

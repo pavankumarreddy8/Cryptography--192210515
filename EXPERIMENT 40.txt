@@ -1,0 +1,118 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define ALPHABET_SIZE 26
+
+// Function to calculate letter frequency in a given text
+void calculateLetterFrequency(const char *text, int *frequency) {
+    for (size_t i = 0; i < strlen(text); i++) {
+        if (isalpha(text[i])) {
+            frequency[tolower(text[i]) - 'a']++;
+        }
+    }
+}
+
+// Function to perform monoalphabetic substitution decryption using a key
+void monoalphabeticDecrypt(const char *ciphertext, const char *key, char *plaintext) {
+    for (size_t i = 0; i < strlen(ciphertext); i++) {
+        if (isalpha(ciphertext[i])) {
+            char base = isupper(ciphertext[i]) ? 'A' : 'a';
+            int index = tolower(ciphertext[i]) - 'a';
+            plaintext[i] = isupper(ciphertext[i]) ? toupper(key[index]) : key[index];
+        } else {
+            plaintext[i] = ciphertext[i];
+        }
+    }
+    plaintext[strlen(ciphertext)] = '\0';
+}
+
+// Function to score the similarity of two frequency arrays
+int scoreFrequencyMatch(int *freq1, int *freq2) {
+    int score = 0;
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        score += abs(freq1[i] - freq2[i]);
+    }
+    return score;
+}
+
+// Function to find the most likely key based on letter frequency analysis
+void findLikelyKey(const char *ciphertext, char *likelyKey) {
+    int ciphertextFrequency[ALPHABET_SIZE] = {0};
+    calculateLetterFrequency(ciphertext, ciphertextFrequency);
+
+    // English letter frequency (you can replace this with a more accurate model)
+    int englishFrequency[ALPHABET_SIZE] = {
+        8, 2, 3, 4, 13, 2, 2, 6, 7, 0, 1, 4, 2, 7, 8, 2, 0, 6, 6, 9, 3, 1, 0, 2, 0, 1
+    };
+
+    // Array to store likely keys and their scores
+    struct {
+        char key[ALPHABET_SIZE + 1];
+        int score;
+    } likelyKeys[ALPHABET_SIZE];
+
+    // Try all 26 possible keys
+    for (int shift = 0; shift < ALPHABET_SIZE; shift++) {
+        char key[ALPHABET_SIZE];
+        for (int i = 0; i < ALPHABET_SIZE; i++) {
+            key[i] = 'A' + (i + shift) % ALPHABET_SIZE;
+        }
+        char decryptedText[strlen(ciphertext) + 1];
+        monoalphabeticDecrypt(ciphertext, key, decryptedText);
+
+        int score = scoreFrequencyMatch(ciphertextFrequency, englishFrequency);
+
+        // Store the key and score in the likelyKeys array
+        strcpy(likelyKeys[shift].key, key);
+        likelyKeys[shift].score = score;
+    }
+
+    // Sort likelyKeys based on scores (ascending order)
+    for (int i = 0; i < ALPHABET_SIZE - 1; i++) {
+        for (int j = i + 1; j < ALPHABET_SIZE; j++) {
+            if (likelyKeys[i].score > likelyKeys[j].score) {
+                // Swap keys and scores
+                char tempKey[ALPHABET_SIZE + 1];
+                strcpy(tempKey, likelyKeys[i].key);
+                strcpy(likelyKeys[i].key, likelyKeys[j].key);
+                strcpy(likelyKeys[j].key, tempKey);
+
+                int tempScore = likelyKeys[i].score;
+                likelyKeys[i].score = likelyKeys[j].score;
+                likelyKeys[j].score = tempScore;
+            }
+        }
+    }
+
+    // Copy the top key to the output
+    strcpy(likelyKey, likelyKeys[0].key);
+}
+
+int main() {
+    // Example Ciphertext
+    const char *ciphertext = "KVLIV";
+
+    // Number of top possible plaintexts to display
+    int topN = 10;
+
+    // Buffer to store the likely key
+    char likelyKey[ALPHABET_SIZE + 1];
+
+    // Find the likely key
+    findLikelyKey(ciphertext, likelyKey);
+
+    // Display the top N possible plaintexts
+    printf("Top %d Possible Plaintexts:\n", topN);
+    for (int i = 0; i < topN; i++) {
+        char plaintext[strlen(ciphertext) + 1];
+        monoalphabeticDecrypt(ciphertext, likelyKey, plaintext);
+        printf("Key: %s - Plaintext: %s\n", likelyKey, plaintext);
+
+        // Move to the next likely key
+        strcpy(likelyKey, likelyKey + 1);
+    }
+
+    return 0;
+}
